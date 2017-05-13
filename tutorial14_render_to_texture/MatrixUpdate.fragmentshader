@@ -1,0 +1,92 @@
+#version 330 core
+
+in vec2 UV;
+
+layout(location = 0) out vec3 color0;
+layout(location = 1) out vec2 color1;
+
+uniform sampler2D srcLeftA;
+uniform sampler2D srcLeftB;
+uniform sampler2D srcRightA;
+uniform sampler2D srcRightB;
+uniform sampler2D flow;
+
+uniform float height;
+uniform float width;
+uniform float hs;
+uniform float ws;
+
+void main() {
+	int BORDER = 5;
+	float border[5] = {0.14f, 0.14f, 0.4472f, 0.4472f, 0.4472f};
+
+	float x = UV.x;
+	float y = UV.y;
+
+	vec2 d = texture(flow, UV).xy;
+
+	float x1 = x + d.x * ws;
+	float y1 = y + d.y * hs;
+
+	float r1;
+	float r2;
+	float r3;
+	float r4;
+	float r5;
+	float r6 = 0;
+
+	vec3 leftPointA = texture(srcLeftA, UV).xyz;
+	vec2 leftPointB = texture(srcLeftB, UV).xy;
+
+	vec3 pointA = texture(srcRightA, vec2(x1, y1)).xyz;
+	vec2 pointB = texture(srcRightB, vec2(x1, y1)).xy;
+	
+	r2 = (leftPointA.x - pointA.x) * 0.5f;
+	r3 = (leftPointA.y - pointA.y) * 0.5f;
+	r4 = (leftPointA.z + pointA.z) * 0.5f;
+	r5 = (leftPointB.x + pointB.x) * 0.5f;
+	r6 = (leftPointB.y + pointB.y) * 0.25f;
+
+
+	r2 += r4 * d.y + r6 * d.x;
+	r3 += r6 * d.y + r5 * d.x;
+
+	float scale = 1.f;
+
+	int scaledX = int(x * width);
+	if (scaledX < BORDER) {
+        scale *= border[scaledX];
+    } else if (scaledX >= width - BORDER) {
+        scale *= border[int(width) - scaledX - 1];
+    }
+
+	int scaledY = int(y * height);
+    if (scaledY < BORDER) {
+        scale *= border[scaledY];
+    } else if (scaledY >= height - BORDER) {
+        scale *= border[int(height) - scaledY - 1];
+    }
+
+    if (scale != 1.f) {
+        r2 *= scale; 
+        r3 *= scale; 
+        r4 *= scale;
+        r5 *= scale; 
+        r6 *= scale;
+    }
+
+	float r6q = r6 * r6;
+
+	float out1 = r4 * r4 + r6q;
+	float out2 = (r4 + r5) * r6;
+	float out3 = r5 * r5 + r6q;
+	float out4 = r4 * r2 + r6 * r3;
+	float out5 = r6 * r2 + r5 * r3;
+	
+	float use = abs(out1) * 500;
+	color0 = vec3(use, use, use);
+	//color0 = vec3(abs(out1) * 1000, abs(out2) * 1000, abs(out3) * 1000);
+
+	//color0 = vec3(out1, out2, out3);
+	//color1 = vec2(out4, out5);
+}

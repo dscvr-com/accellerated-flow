@@ -1,0 +1,13 @@
+#version 330 core
+
+in vec2 UV;
+
+out vec3 color;
+
+uniform sampler2D src;
+
+void main(){
+	vec3 cur = texture(src, UV).xyz;
+
+	color = vec3(abs(cur.x), abs(cur.y), abs(cur.z));
+}

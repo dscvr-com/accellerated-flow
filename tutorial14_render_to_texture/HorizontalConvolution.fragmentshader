@@ -1,0 +1,82 @@
+#version 330 core
+
+in vec2 UV;
+
+layout(location = 0) out vec3 colorA;
+layout(location = 1) out vec2 colorB;
+
+uniform float g[8];
+uniform float xg[8];
+uniform float xxg[8];
+
+uniform float ig11;
+uniform float ig03;
+uniform float ig33;
+uniform float ig55;
+
+uniform int n;
+
+uniform float width;
+
+uniform sampler2D src;
+
+void main() {
+	float x = UV.x;
+	float y = UV.y;
+
+	float g0 = g[0];
+	vec3 x3 = texture(src, vec2(x, y)).xyz;
+
+	float b1 = x3.x * g0;
+	float b2 = 0;
+	float b3 = x3.y * g0;
+	float b4 = 0;
+	float b5 = x3.z * g0;
+	float b6 = 0;
+
+	int k;
+	float tg;
+	float gk;
+	float xgk;
+	float kf;
+	for (k = 1; k <= n; k += 1) {
+		kf = k;
+		kf = kf / width;
+		vec3 xk3 = texture(src, vec2(x + kf, y)).xyz;
+		vec3 ixk3 = texture(src, vec2(x - kf, y)).xyz;
+
+		tg = xk3.x + ixk3.x;
+		gk = g[k];
+		xgk = xg[k];
+		b1 += tg * gk;
+		b4 += tg * xxg[k];
+
+		b2 += (xk3.x - ixk3.x) * xgk;
+		b3 += (xk3.y + ixk3.y) * gk;
+		b6 += (xk3.y - ixk3.y) * xgk;
+		b5 += (xk3.z + ixk3.z) * gk;
+	}
+	float z0 = b3 * ig11;
+	float z1 = b2 * ig11;
+	float z2 = b1 * ig03 + b5 * ig33;
+	float z3 = b1 * ig03 + b4 * ig33;
+	float z4 = b6 * ig55;
+	z0 *= 30;
+	z1 *= 20;
+	float o = abs(z2) * 15;
+
+	colorA = vec3(z0, z1, z2);
+	colorB = vec2(z3, z4);
+	//color0 = vec3(z0, z1, z2, z3);
+	//color0 = vec3(z0, z0, z0, 0);
+	//color0 = vec3(abs(z0), abs(z0), abs(z0), 0);
+	//color0 = vec3(abs(z1), abs(z1), abs(z1), 0);
+	//color0 = vec3(abs(z2), abs(z2), abs(z2), 0);
+	//color0 = vec3(abs(z3), abs(z3), abs(z3), 0);
+	//color0 = vec3(abs(z4), abs(z4), abs(z4), 0);
+
+	//color0 = vec3(z0, z1, z2);
+	//color1 = vec2(z3, z4);
+}
+
+//------------------------------------------------------------------//

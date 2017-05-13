@@ -1,0 +1,46 @@
+#version 330 core
+
+in vec2 UV;
+
+out vec3 color;
+
+uniform sampler2D src;
+
+uniform float g[8];
+uniform float xg[8];
+uniform float xxg[8];
+
+uniform int n;
+
+uniform float height;
+
+void main() {
+	float x = UV.x;
+	float y = UV.y;
+
+	float t0 = texture(src, vec2(x, y)).x * g[0];
+	float t1 = 0;
+	float t2 = 0;
+
+	float sfield0;
+	float sfield1;
+
+	float p;
+	
+	int k = n;
+	float kf;
+	for (k = 1; k <= n; k += 1) {
+		kf = k;
+		kf = kf / height;
+		sfield0 = texture(src, vec2(x, (max(y - kf, 0)))).x;
+		sfield1 = texture(src, vec2(x, (min(y + kf, 1)))).x;
+		p = sfield0 + sfield1;
+
+		t0 += g[k] * p;
+		t1 += xg[k] * (sfield1 - sfield0);
+		t2 += xxg[k] * p;
+	}
+	//color = vec3(0, 0, 0);
+	color = vec3(t0, t1, t2);
+	//color = texture(src, UV).xyz;
+}
