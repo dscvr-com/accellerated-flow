@@ -36,7 +36,7 @@ void main() {
     vec2 decLoc;
     for (int i = 1; i <= m; i += 1) {
         gauss = kernel[i];
-        float step = i * ws;
+        step = i * ws;
         
         incLoc = vec2(x + step, y);
         decLoc = vec2(x - step, y);
@@ -56,4 +56,6 @@ void main() {
     
     colorA = vec3(xA, yA, zA);
     colorB = vec2(xB, yB);
+
+    //colorA = vec3(0, 1, 0);
 }

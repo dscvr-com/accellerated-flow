@@ -7,7 +7,7 @@ out vec3 color;
 uniform sampler2D src;
 
 void main(){
-	vec3 cur = texture(src, UV).xyz;
-
-	color = vec3(abs(cur.x) * 10, abs(cur.y) * 10, abs(cur.z) * 10);
+	vec4 cur = texture(src, UV);
+    int mul = 1;
+	color = vec3(abs(cur.x) * mul, abs(cur.y) * mul, abs(cur.z) * mul);
 }

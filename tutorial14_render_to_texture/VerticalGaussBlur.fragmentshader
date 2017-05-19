@@ -36,7 +36,7 @@ void main() {
     vec2 decLoc;
     for (int i = 1; i <= m; i += 1) {
         gauss = kernel[i];
-        float step = i * hs;
+        step = i * hs;
         
         incLoc = vec2(x, y + step);
         decLoc = vec2(x, y - step);
@@ -54,6 +54,8 @@ void main() {
         yB += (pointB0.y + pointB1.y) * gauss;
     }
     
+    //colorA = texture(srcA, UV).xyz;
+    //colorB = texture(srcB, UV).xy;
     colorA = vec3(xA, yA, zA);
     colorB = vec2(xB, yB);
 }

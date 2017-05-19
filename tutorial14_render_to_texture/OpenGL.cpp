@@ -53,7 +53,7 @@ const int Flow = 7;
 const int FrameLeft = 8;
 const int FrameRight = 9;
 
-int CurrentFrame;
+int CurrentFrame = FrameLeft;
 
 GLenum* _attachments;
 
@@ -108,7 +108,7 @@ GLuint _horizontalGaussBlur_ws_Id;
 GLuint _horizontalGaussBlur_kernel_Id;
 GLuint _horizontalGaussBlur_m_Id;
 
-int _kernelSize = 10;
+int _kernelSize = 10; //If changed, adjust accordingly in GaussBlur Shaders (uniform float kernel[])
 float* _kernel;
 
 GLuint _copyShader;
@@ -249,11 +249,11 @@ void Init(int imageWidth, int imageHeight)
 	_verticalGaussBlur_m_Id = glGetUniformLocation(_verticalGaussBlur, "m");
 
 	_horizontalGaussBlur = LoadShaders("Passthrough.vertexshader", "HorizontalGaussBlur.fragmentshader");
-	_horizontalGaussBlur_srcA_Id = glGetUniformLocation(_verticalGaussBlur, "srcA");
-	_horizontalGaussBlur_srcB_Id = glGetUniformLocation(_verticalGaussBlur, "srcB");
-	_horizontalGaussBlur_ws_Id = glGetUniformLocation(_verticalGaussBlur, "ws");
-	_horizontalGaussBlur_kernel_Id = glGetUniformLocation(_verticalGaussBlur, "kernel");
-	_horizontalGaussBlur_m_Id = glGetUniformLocation(_verticalGaussBlur, "m");
+	_horizontalGaussBlur_srcA_Id = glGetUniformLocation(_horizontalGaussBlur, "srcA");
+	_horizontalGaussBlur_srcB_Id = glGetUniformLocation(_horizontalGaussBlur, "srcB");
+	_horizontalGaussBlur_ws_Id = glGetUniformLocation(_horizontalGaussBlur, "ws");
+	_horizontalGaussBlur_kernel_Id = glGetUniformLocation(_horizontalGaussBlur, "kernel");
+	_horizontalGaussBlur_m_Id = glGetUniformLocation(_horizontalGaussBlur, "m");
 
 	_copyShader = LoadShaders("Passthrough.vertexshader", "WobblyTexture.fragmentshader");
 	_copyShader_srcId = glGetUniformLocation(_copyShader, "src");
@@ -398,14 +398,14 @@ void ExecuteShaders()
 	//Only for testing, later no need to set every time
 	glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
 	//-------------------------------------------------
-	ExecuteVerticalConvolutionShader(GetCurrentFrameLeft(), Workspace);
-	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB());
+	//ExecuteVerticalConvolutionShader(GetCurrentFrameLeft(), Workspace);
+	//ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB());
 	/*ExecuteVerticalConvolutionShader(GetCurrentFrameRight(), Workspace);
 	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB());
 	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);*/
 
-	//ExecuteVerticalGaussBlur(GetCurrentFrameRight(), Workspace, GetCurrentFrameLeft(), GetCurrentPolyExpRightB());
-	ExecuteVerticalGaussBlur(GetCurrentFrameRight(), GetCurrentPolyExpLeftA(), UpdateMatrixA, UpdateMatrixB);
+	ExecuteVerticalGaussBlur(GetCurrentFrameLeft(), GetCurrentPolyExpLeftA(), Workspace, GetCurrentPolyExpRightB());
+	ExecuteHorizontalGaussBlur(Workspace, GetCurrentPolyExpLeftA(), UpdateMatrixA, GetCurrentPolyExpRightB());
 
 	//Only for testing, later no need to set every time
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -629,17 +629,19 @@ void InitGaussKernel()
 	double twoSigmaSquare = 2 * _kernelSize * _kernelSize * 0.09;
 	double s = 1;
 	_kernel[0] = (float) s;
-	for (int i = 0; i < _kernelSize; i += 1)
+	for (int i = 1; i < _kernelSize; i += 1)
 	{
 		float t = (float) std::exp(-i * i / twoSigmaSquare);
-		_kernel[i] = t;
+		_kernel[i] = t / std::sqrt(twoSigmaSquare * 3.1415926535897932);
 		s += t * 2;
 	}
 
 	s = 1. / s;
 	for (int i = 0; i < _kernelSize; i += 1)
 	{
-		_kernel[i] = _kernel[i] * s;
+		//_kernel[i] = _kernel[i] * s;
+		float p = _kernel[i];
+		int s = 0;
 	}
 }
 
