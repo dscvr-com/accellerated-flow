@@ -1,6 +1,7 @@
 #version 330 core
 
 in vec2 UV;
+uniform sampler2D src;
 
 layout(location = 0) out vec3 colorA;
 layout(location = 1) out vec2 colorB;
@@ -18,14 +19,12 @@ uniform int n;
 
 uniform float width;
 
-uniform sampler2D src;
-
 void main() {
 	float x = UV.x;
 	float y = UV.y;
 
 	float g0 = g[0];
-	vec3 x3 = texture(src, vec2(x, y)).xyz;
+	vec4 x3 = texture(src, vec2(x, y));
 
 	float b1 = x3.x * g0;
 	float b2 = 0;
@@ -42,8 +41,8 @@ void main() {
 	for (k = 1; k <= n; k += 1) {
 		kf = k;
 		kf = kf / width;
-		vec3 xk3 = texture(src, vec2(x + kf, y)).xyz;
-		vec3 ixk3 = texture(src, vec2(x - kf, y)).xyz;
+		vec4 xk3 = texture(src, vec2(x + kf, y));
+		vec4 ixk3 = texture(src, vec2(x - kf, y));
 
 		tg = xk3.x + ixk3.x;
 		gk = g[k];
@@ -61,12 +60,12 @@ void main() {
 	float z2 = b1 * ig03 + b5 * ig33;
 	float z3 = b1 * ig03 + b4 * ig33;
 	float z4 = b6 * ig55;
-	z0 *= 30;
-	z1 *= 20;
-	float o = abs(z2) * 15;
 
 	colorA = vec3(z0, z1, z2);
 	colorB = vec2(z3, z4);
+    
+	colorB = vec2(z3 * 50, z4 * 50);
+
 	//color0 = vec3(z0, z1, z2, z3);
 	//color0 = vec3(z0, z0, z0, 0);
 	//color0 = vec3(abs(z0), abs(z0), abs(z0), 0);
@@ -74,7 +73,6 @@ void main() {
 	//color0 = vec3(abs(z2), abs(z2), abs(z2), 0);
 	//color0 = vec3(abs(z3), abs(z3), abs(z3), 0);
 	//color0 = vec3(abs(z4), abs(z4), abs(z4), 0);
-
 	//color0 = vec3(z0, z1, z2);
 	//color1 = vec2(z3, z4);
 }

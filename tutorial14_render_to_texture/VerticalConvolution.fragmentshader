@@ -13,6 +13,7 @@ uniform float xxg[8];
 uniform int n;
 
 uniform float height;
+uniform float hs;
 
 void main() {
 	float x = UV.x;
@@ -27,7 +28,7 @@ void main() {
 
 	float p;
 	
-	int k = n;
+	int k;
 	float kf;
 	for (k = 1; k <= n; k += 1) {
 		kf = k;
@@ -40,7 +41,6 @@ void main() {
 		t1 += xg[k] * (sfield1 - sfield0);
 		t2 += xxg[k] * p;
 	}
-	//color = vec3(0, 0, 0);
+
 	color = vec3(t0, t1, t2);
-	//color = texture(src, UV).xyz;
 }

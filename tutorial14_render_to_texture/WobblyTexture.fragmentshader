@@ -9,5 +9,5 @@ uniform sampler2D src;
 void main(){
 	vec3 cur = texture(src, UV).xyz;
 
-	color = vec3(abs(cur.x), abs(cur.y), abs(cur.z));
+	color = vec3(abs(cur.x) * 10, abs(cur.y) * 10, abs(cur.z) * 10);
 }

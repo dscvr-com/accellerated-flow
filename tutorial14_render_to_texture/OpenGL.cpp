@@ -69,6 +69,7 @@ GLuint _verticalShader_xgId;
 GLuint _verticalShader_xxgId;
 GLuint _verticalShader_nId;
 GLuint _verticalShader_heightId;
+GLuint _verticalShader_hsId;
 
 GLuint _horizontalShader;
 GLuint _horizontalShader_srcId;
@@ -92,6 +93,23 @@ GLuint _matrixUpdateShader_heightId;
 GLuint _matrixUpdateShader_widthId;
 GLuint _matrixUpdateShader_hsId;
 GLuint _matrixUpdateShader_wsId;
+
+GLuint _verticalGaussBlur;
+GLuint _verticalGaussBlur_srcA_Id;
+GLuint _verticalGaussBlur_srcB_Id;
+GLuint _verticalGaussBlur_hs_Id;
+GLuint _verticalGaussBlur_kernel_Id;
+GLuint _verticalGaussBlur_m_Id;
+
+GLuint _horizontalGaussBlur;
+GLuint _horizontalGaussBlur_srcA_Id;
+GLuint _horizontalGaussBlur_srcB_Id;
+GLuint _horizontalGaussBlur_ws_Id;
+GLuint _horizontalGaussBlur_kernel_Id;
+GLuint _horizontalGaussBlur_m_Id;
+
+int _kernelSize = 10;
+float* _kernel;
 
 GLuint _copyShader;
 GLuint _copyShader_srcId;
@@ -176,6 +194,7 @@ void Init(int imageWidth, int imageHeight)
 		return;
 
 	InitQuadVertexBuffer();
+	InitGaussKernel();
 
 	/*_shader0 = LoadShaders("Passthrough.vertexshader", "TestShader.fragmentshader");
 	_shader0param_sourceLeftId = glGetUniformLocation(_shader0, "sourceLeft");
@@ -196,6 +215,7 @@ void Init(int imageWidth, int imageHeight)
 	_verticalShader_xxgId = glGetUniformLocation(_verticalShader, "xxg");
 	_verticalShader_nId = glGetUniformLocation(_verticalShader, "n");
 	_verticalShader_heightId = glGetUniformLocation(_verticalShader, "height");
+	_verticalShader_hsId = glGetUniformLocation(_verticalShader, "hs");
 
 	//_horizontalShader = LoadShaders("Passthrough.vertexshader", "WobblyTexture.fragmentshader");
 	_horizontalShader = LoadShaders("Passthrough.vertexshader", "HorizontalConvolution.fragmentshader");
@@ -220,6 +240,20 @@ void Init(int imageWidth, int imageHeight)
 	_matrixUpdateShader_widthId = glGetUniformLocation(_matrixUpdateShader, "width");
 	_matrixUpdateShader_hsId = glGetUniformLocation(_matrixUpdateShader, "hs");
 	_matrixUpdateShader_wsId = glGetUniformLocation(_matrixUpdateShader, "ws");
+
+	_verticalGaussBlur = LoadShaders("Passthrough.vertexshader", "VerticalGaussBlur.fragmentshader");
+	_verticalGaussBlur_srcA_Id = glGetUniformLocation(_verticalGaussBlur, "srcA");
+	_verticalGaussBlur_srcB_Id = glGetUniformLocation(_verticalGaussBlur, "srcB");
+	_verticalGaussBlur_hs_Id = glGetUniformLocation(_verticalGaussBlur, "hs");
+	_verticalGaussBlur_kernel_Id = glGetUniformLocation(_verticalGaussBlur, "kernel");
+	_verticalGaussBlur_m_Id = glGetUniformLocation(_verticalGaussBlur, "m");
+
+	_horizontalGaussBlur = LoadShaders("Passthrough.vertexshader", "HorizontalGaussBlur.fragmentshader");
+	_horizontalGaussBlur_srcA_Id = glGetUniformLocation(_verticalGaussBlur, "srcA");
+	_horizontalGaussBlur_srcB_Id = glGetUniformLocation(_verticalGaussBlur, "srcB");
+	_horizontalGaussBlur_ws_Id = glGetUniformLocation(_verticalGaussBlur, "ws");
+	_horizontalGaussBlur_kernel_Id = glGetUniformLocation(_verticalGaussBlur, "kernel");
+	_horizontalGaussBlur_m_Id = glGetUniformLocation(_verticalGaussBlur, "m");
 
 	_copyShader = LoadShaders("Passthrough.vertexshader", "WobblyTexture.fragmentshader");
 	_copyShader_srcId = glGetUniformLocation(_copyShader, "src");
@@ -317,7 +351,7 @@ int GetCurrentPolyExpLeftA()
 	}
 	else
 	{
-		return PolyExpLeftB;
+		return PolyExpRightA;
 	}
 }
 int GetCurrentPolyExpLeftB()
@@ -328,7 +362,7 @@ int GetCurrentPolyExpLeftB()
 	}
 	else
 	{
-		return PolyExpLeftA;
+		return PolyExpRightB;
 	}
 }
 int GetCurrentPolyExpRightA()
@@ -339,7 +373,7 @@ int GetCurrentPolyExpRightA()
 	}
 	else
 	{
-		return PolyExpRightB;
+		return PolyExpLeftA;
 	}
 }
 int GetCurrentPolyExpRightB()
@@ -350,7 +384,7 @@ int GetCurrentPolyExpRightB()
 	}
 	else
 	{
-		return PolyExpRightA;
+		return PolyExpLeftB;
 	}
 }
 
@@ -364,16 +398,19 @@ void ExecuteShaders()
 	//Only for testing, later no need to set every time
 	glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
 	//-------------------------------------------------
-	ExecuteVerticalConvolutionShader(FrameRight, Workspace);
+	ExecuteVerticalConvolutionShader(GetCurrentFrameLeft(), Workspace);
 	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB());
-	/*ExecuteVerticalConvolutionShader(GetCurrentFrame1(), Workspace0);
-	ExecuteHorizontalConvolutionShader(Workspace0, PolyExp1);
-	ExecuteMatrixUpdateShader(PolyExp0, PolyExp1, Flow, UpdateMatrix);*/
+	/*ExecuteVerticalConvolutionShader(GetCurrentFrameRight(), Workspace);
+	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB());
+	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);*/
+
+	//ExecuteVerticalGaussBlur(GetCurrentFrameRight(), Workspace, GetCurrentFrameLeft(), GetCurrentPolyExpRightB());
+	ExecuteVerticalGaussBlur(GetCurrentFrameRight(), GetCurrentPolyExpLeftA(), UpdateMatrixA, UpdateMatrixB);
 
 	//Only for testing, later no need to set every time
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//ExecuteCopyShader(UPDATEMATRIX, UpdateMatrix);
-	ExecuteCopyShader(GetCurrentPolyExpLeftB());
+	ExecuteCopyShader(UpdateMatrixA);
 	//ExecuteCopyShader(UpdateMatrix);
 	//-------------------------------------------------
 }
@@ -424,6 +461,7 @@ void ExecuteVerticalConvolutionShader(int textureSource, int destination)
 	glUniform1fv(_verticalShader_xxgId, 8, xxg);
 	glUniform1i(_verticalShader_nId, 7);
 	glUniform1f(_verticalShader_heightId, (float) _imageHeight);
+	glUniform1f(_verticalShader_hsId, ((float) 1) / ((float) _imageHeight));
 
 	FinalizeShader();
 }
@@ -497,6 +535,54 @@ void ExecuteMatrixUpdateShader(int textureSourceLeftA, int textureSourceLeftB, i
 	FinalizeShader();
 }
 
+void ExecuteVerticalGaussBlur(int textureSourceA, int textureSourceB, int destinationA, int destinationB)
+{
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textures[destinationA], 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, _textures[destinationB], 0);
+	glDrawBuffers(2, _attachments);
+	PrepareShader();
+
+	glUseProgram(_verticalGaussBlur);
+
+	glActiveTexture(GetTextureActiveSpace(textureSourceA));
+	glBindTexture(GL_TEXTURE_2D, _textures[textureSourceA]);
+	glUniform1i(_verticalGaussBlur_srcA_Id, GetActiveSpaceLocation(textureSourceA));
+
+	glActiveTexture(GetTextureActiveSpace(textureSourceB));
+	glBindTexture(GL_TEXTURE_2D, _textures[textureSourceB]);
+	glUniform1i(_verticalGaussBlur_srcB_Id, GetActiveSpaceLocation(textureSourceB));
+
+	glUniform1f(_verticalGaussBlur_hs_Id, ((float) 1) / ((float) _imageHeight));
+	glUniform1fv(_verticalGaussBlur_kernel_Id, _kernelSize, _kernel);
+	glUniform1f(_verticalGaussBlur_m_Id, _kernelSize);
+
+	FinalizeShader();
+}
+
+void ExecuteHorizontalGaussBlur(int textureSourceA, int textureSourceB, int destinationA, int destinationB)
+{
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textures[destinationA], 0);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, _textures[destinationB], 0);
+	glDrawBuffers(2, _attachments);
+	PrepareShader();
+
+	glUseProgram(_horizontalGaussBlur);
+
+	glActiveTexture(GetTextureActiveSpace(textureSourceA));
+	glBindTexture(GL_TEXTURE_2D, _textures[textureSourceA]);
+	glUniform1i(_horizontalGaussBlur_srcA_Id, GetActiveSpaceLocation(textureSourceA));
+
+	glActiveTexture(GetTextureActiveSpace(textureSourceB));
+	glBindTexture(GL_TEXTURE_2D, _textures[textureSourceB]);
+	glUniform1i(_horizontalGaussBlur_srcB_Id, GetActiveSpaceLocation(textureSourceB));
+
+	glUniform1f(_horizontalGaussBlur_ws_Id, ((float) 1) / ((float) _imageWidth));
+	glUniform1fv(_horizontalGaussBlur_kernel_Id, _kernelSize, _kernel);
+	glUniform1f(_horizontalGaussBlur_m_Id, _kernelSize);
+
+	FinalizeShader();
+}
+
 void ExecuteCopyShader(int textureSource)
 {
 	PrepareShader();
@@ -534,6 +620,27 @@ void InitQuadVertexBuffer() {
 	glGenBuffers(1, &_quadVertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, _quadVertexbuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(_gQuadVertexBufferData), _gQuadVertexBufferData, GL_STATIC_DRAW);
+}
+
+void InitGaussKernel()
+{
+	_kernel = new float[_kernelSize];
+
+	double twoSigmaSquare = 2 * _kernelSize * _kernelSize * 0.09;
+	double s = 1;
+	_kernel[0] = (float) s;
+	for (int i = 0; i < _kernelSize; i += 1)
+	{
+		float t = (float) std::exp(-i * i / twoSigmaSquare);
+		_kernel[i] = t;
+		s += t * 2;
+	}
+
+	s = 1. / s;
+	for (int i = 0; i < _kernelSize; i += 1)
+	{
+		_kernel[i] = _kernel[i] * s;
+	}
 }
 
 void CleanUp()

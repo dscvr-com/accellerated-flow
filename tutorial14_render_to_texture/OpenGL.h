@@ -1,5 +1,6 @@
 #pragma once
 void InitQuadVertexBuffer();
+void InitGaussKernel();
 void Init(int imageWidth, int imageHeight);
 void WindowsInit();
 void LoadInitialFrame(void *frame);
@@ -9,6 +10,8 @@ void ExecuteShaders();
 void ExecuteVerticalConvolutionShader(int textureSource, int destination);
 void ExecuteHorizontalConvolutionShader(int textureSource, int destinationA, int destinationB);
 void ExecuteMatrixUpdateShader(int textureSourceLeftA, int textureSourceLeftB, int textureSourceRightA, int textureSourceRightB, int flowSource, int destinationA, int destinationB);
+void ExecuteVerticalGaussBlur(int textureSourceA, int textureSourceB, int destinationA, int destinationB);
+void ExecuteHorizontalGaussBlur(int textureSourceA, int textureSourceB, int destinationA, int destinationB);
 void ExecuteCopyShader(int textureSource);
 void PrepareShader();
 void FinalizeShader();
