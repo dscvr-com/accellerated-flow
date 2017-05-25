@@ -8,6 +8,8 @@ uniform sampler2D src;
 
 void main(){
 	vec4 cur = texture(src, UV);
-    int mul = 1;
+    float mul = 100000;
 	color = vec3(abs(cur.x) * mul, abs(cur.y) * mul, abs(cur.z) * mul);
+    float use = abs(cur.y) * 30;
+    //color = vec3(use, use, use);
 }

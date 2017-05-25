@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include <iostream>
 
 //#include <png.h>
 
@@ -31,6 +32,7 @@ int _imageWidth;
 int _imageHeight;
 
 const int WORKSPACE = GL_TEXTURE0;
+const int WORKSPACE2 = GL_TEXTURE1;
 const int POLYEXP_LEFT_A = GL_TEXTURE1;
 const int POLYEXP_LEFT_B = GL_TEXTURE2;
 const int POLYEXP_RIGHT_A = GL_TEXTURE3;
@@ -39,25 +41,30 @@ const int UPDATEMATRIX_A = GL_TEXTURE5;
 const int UPDATEMATRIX_B = GL_TEXTURE6;
 const int FLOW = GL_TEXTURE7;
 const int FRAME = GL_TEXTURE0;
+const int BLURA = GL_TEXTURE2;
+const int BLURB = GL_TEXTURE3;
 
 GLuint _framebuffer;
 GLuint* _textures;
 const int Workspace = 0;
-const int PolyExpLeftA = 1;
-const int PolyExpLeftB = 2;
-const int PolyExpRightA = 3;
-const int PolyExpRightB = 4;
-const int UpdateMatrixA = 5;
-const int UpdateMatrixB = 6;
-const int Flow = 7;
-const int FrameLeft = 8;
-const int FrameRight = 9;
+const int Workspace2 = 1;
+const int PolyExpLeftA = 2;
+const int PolyExpLeftB = 3;
+const int PolyExpRightA = 4;
+const int PolyExpRightB = 5;
+const int UpdateMatrixA = 6;
+const int UpdateMatrixB = 7;
+const int Flow = 8;
+const int FrameLeft = 9;
+const int FrameRight = 10;
+const int BlurA = 11;
+const int BlurB = 12;
 
 int CurrentFrame = FrameLeft;
 
 GLenum* _attachments;
 
-int _numTextures = 10;
+int _numTextures = 13;
 
 
 GLuint _vertexArrayId;
@@ -107,6 +114,10 @@ GLuint _horizontalGaussBlur_srcB_Id;
 GLuint _horizontalGaussBlur_ws_Id;
 GLuint _horizontalGaussBlur_kernel_Id;
 GLuint _horizontalGaussBlur_m_Id;
+
+GLuint _flowUpdateShader;
+GLuint _flowUpdateShader_srcA_Id;
+GLuint _flowUpdateShader_srcB_Id;
 
 int _kernelSize = 10; //If changed, adjust accordingly in GaussBlur Shaders (uniform float kernel[])
 float* _kernel;
@@ -255,6 +266,10 @@ void Init(int imageWidth, int imageHeight)
 	_horizontalGaussBlur_kernel_Id = glGetUniformLocation(_horizontalGaussBlur, "kernel");
 	_horizontalGaussBlur_m_Id = glGetUniformLocation(_horizontalGaussBlur, "m");
 
+	_flowUpdateShader = LoadShaders("Passthrough.vertexshader", "FlowUpdateShader.fragmentshader");
+	_flowUpdateShader_srcA_Id = glGetUniformLocation(_flowUpdateShader, "srcA");
+	_flowUpdateShader_srcB_Id = glGetUniformLocation(_flowUpdateShader, "srcB");
+
 	_copyShader = LoadShaders("Passthrough.vertexshader", "WobblyTexture.fragmentshader");
 	_copyShader_srcId = glGetUniformLocation(_copyShader, "src");
 }
@@ -398,19 +413,23 @@ void ExecuteShaders()
 	//Only for testing, later no need to set every time
 	glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
 	//-------------------------------------------------
-	//ExecuteVerticalConvolutionShader(GetCurrentFrameLeft(), Workspace);
-	//ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB());
-	/*ExecuteVerticalConvolutionShader(GetCurrentFrameRight(), Workspace);
+	ExecuteVerticalConvolutionShader(GetCurrentFrameLeft(), Workspace);
+	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB());
+	ExecuteVerticalConvolutionShader(GetCurrentFrameRight(), Workspace);
 	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB());
-	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);*/
+	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
 
-	ExecuteVerticalGaussBlur(GetCurrentFrameLeft(), GetCurrentPolyExpLeftA(), Workspace, GetCurrentPolyExpRightB());
-	ExecuteHorizontalGaussBlur(Workspace, GetCurrentPolyExpLeftA(), UpdateMatrixA, GetCurrentPolyExpRightB());
+	for (int i = 0; i < 1; i += 1) {
+		ExecuteVerticalGaussBlur(UpdateMatrixA, UpdateMatrixB, Workspace, Workspace2);
+		ExecuteHorizontalGaussBlur(Workspace, Workspace2, BlurA, BlurB);
+		ExecuteFlowUpdateShader(BlurA, BlurB, Flow);
+		//ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
+	}
 
 	//Only for testing, later no need to set every time
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//ExecuteCopyShader(UPDATEMATRIX, UpdateMatrix);
-	ExecuteCopyShader(UpdateMatrixA);
+	ExecuteCopyShader(Flow);
 	//ExecuteCopyShader(UpdateMatrix);
 	//-------------------------------------------------
 }
@@ -554,7 +573,7 @@ void ExecuteVerticalGaussBlur(int textureSourceA, int textureSourceB, int destin
 
 	glUniform1f(_verticalGaussBlur_hs_Id, ((float) 1) / ((float) _imageHeight));
 	glUniform1fv(_verticalGaussBlur_kernel_Id, _kernelSize, _kernel);
-	glUniform1f(_verticalGaussBlur_m_Id, _kernelSize);
+	glUniform1i(_verticalGaussBlur_m_Id, _kernelSize);
 
 	FinalizeShader();
 }
@@ -578,7 +597,25 @@ void ExecuteHorizontalGaussBlur(int textureSourceA, int textureSourceB, int dest
 
 	glUniform1f(_horizontalGaussBlur_ws_Id, ((float) 1) / ((float) _imageWidth));
 	glUniform1fv(_horizontalGaussBlur_kernel_Id, _kernelSize, _kernel);
-	glUniform1f(_horizontalGaussBlur_m_Id, _kernelSize);
+	glUniform1i(_horizontalGaussBlur_m_Id, _kernelSize);
+
+	FinalizeShader();
+}
+
+void ExecuteFlowUpdateShader(int textureSourceA, int textureSourceB, int destination)
+{
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textures[destination], 0);
+	PrepareShader();
+
+	glUseProgram(_flowUpdateShader);
+
+	glActiveTexture(GetTextureActiveSpace(textureSourceA));
+	glBindTexture(GL_TEXTURE_2D, _textures[textureSourceA]);
+	glUniform1i(_horizontalGaussBlur_srcA_Id, GetActiveSpaceLocation(textureSourceA));
+
+	glActiveTexture(GetTextureActiveSpace(textureSourceB));
+	glBindTexture(GL_TEXTURE_2D, _textures[textureSourceB]);
+	glUniform1i(_horizontalGaussBlur_srcB_Id, GetActiveSpaceLocation(textureSourceB));
 
 	FinalizeShader();
 }
@@ -632,14 +669,14 @@ void InitGaussKernel()
 	for (int i = 1; i < _kernelSize; i += 1)
 	{
 		float t = (float) std::exp(-i * i / twoSigmaSquare);
-		_kernel[i] = t / std::sqrt(twoSigmaSquare * 3.1415926535897932);
+		_kernel[i] = t;// / std::sqrt(twoSigmaSquare * 3.1415926535897932);
 		s += t * 2;
 	}
 
 	s = 1. / s;
 	for (int i = 0; i < _kernelSize; i += 1)
 	{
-		//_kernel[i] = _kernel[i] * s;
+		_kernel[i] = _kernel[i] * s;
 		float p = _kernel[i];
 		int s = 0;
 	}
@@ -659,6 +696,8 @@ int GetTextureActiveSpace(int textureSource)
 	{
 		case Workspace:
 			return WORKSPACE;
+		case Workspace2:
+			return WORKSPACE2;
 		case PolyExpLeftA:
 			return POLYEXP_LEFT_A;
 		case PolyExpLeftB:
@@ -677,6 +716,10 @@ int GetTextureActiveSpace(int textureSource)
 			return FRAME;
 		case FrameRight:
 			return FRAME;
+		case BlurA:
+			return BLURA;
+		case BlurB:
+			return BLURB;
 	}
 }
 
@@ -684,26 +727,32 @@ int GetActiveSpaceLocation(int textureSource)
 {
 	switch (textureSource)
 	{
-	case Workspace:
-		return 0;
-	case PolyExpLeftA:
-		return 1;
-	case PolyExpLeftB:
-		return 2;
-	case PolyExpRightA:
-		return 3;
-	case PolyExpRightB:
-		return 4;
-	case UpdateMatrixA:
-		return 5;
-	case UpdateMatrixB:
-		return 6;
-	case Flow:
-		return 7;
-	case FrameLeft:
-		return 0;
-	case FrameRight:
-		return 0;
+		case Workspace:
+			return 0;
+		case Workspace2:
+			return 1;
+		case PolyExpLeftA:
+			return 1;
+		case PolyExpLeftB:
+			return 2;
+		case PolyExpRightA:
+			return 3;
+		case PolyExpRightB:
+			return 4;
+		case UpdateMatrixA:
+			return 5;
+		case UpdateMatrixB:
+			return 6;
+		case Flow:
+			return 7;
+		case FrameLeft:
+			return 0;
+		case FrameRight:
+			return 0;
+		case BlurA:
+			return 2;
+		case BlurB:
+			return 3;
 	}
 }
 
@@ -711,25 +760,31 @@ int GetDimension(int index)
 {
 	switch (index)
 	{
-	case Workspace:
-		return 3;
-	case PolyExpLeftA:
-		return 3;
-	case PolyExpLeftB:
-		return 2;
-	case PolyExpRightA:
-		return 3;
-	case PolyExpRightB:
-		return 2;
-	case UpdateMatrixA:
-		return 3;
-	case UpdateMatrixB:
-		return 2;
-	case Flow:
-		return 3;
-	case FrameLeft:
-		return 3;
-	case FrameRight:
-		return 3;
+		case Workspace:
+			return 3;
+		case Workspace2:
+			return 2;
+		case PolyExpLeftA:
+			return 3;
+		case PolyExpLeftB:
+			return 2;
+		case PolyExpRightA:
+			return 3;
+		case PolyExpRightB:
+			return 2;
+		case UpdateMatrixA:
+			return 3;
+		case UpdateMatrixB:
+			return 2;
+		case Flow:
+			return 3;
+		case FrameLeft:
+			return 3;
+		case FrameRight:
+			return 3;
+		case BlurA:
+			return 3;
+		case BlurB:
+			return 2;
 	}
 }

@@ -2,8 +2,8 @@
 
 in vec2 UV;
 
-layout(location = 0) out vec3 color0;
-layout(location = 1) out vec2 color1;
+layout(location = 0) out vec3 colorA;
+layout(location = 1) out vec2 colorB;
 
 uniform sampler2D srcLeftA;
 uniform sampler2D srcLeftB;
@@ -38,14 +38,14 @@ void main() {
 	vec3 leftPointA = texture(srcLeftA, UV).xyz;
 	vec2 leftPointB = texture(srcLeftB, UV).xy;
 
-	vec3 pointA = texture(srcRightA, vec2(x1, y1)).xyz;
-	vec2 pointB = texture(srcRightB, vec2(x1, y1)).xy;
+	vec3 rightPointA = texture(srcRightA, vec2(x1, y1)).xyz;
+	vec2 rightPointB = texture(srcRightB, vec2(x1, y1)).xy;
 	
-	r2 = (leftPointA.x - pointA.x) * 0.5f;
-	r3 = (leftPointA.y - pointA.y) * 0.5f;
-	r4 = (leftPointA.z + pointA.z) * 0.5f;
-	r5 = (leftPointB.x + pointB.x) * 0.5f;
-	r6 = (leftPointB.y + pointB.y) * 0.25f;
+	r2 = (leftPointA.x - rightPointA.x) * 0.5f;
+	r3 = (leftPointA.y - rightPointA.y) * 0.5f;
+	r4 = (leftPointA.z + rightPointA.z) * 0.5f;
+	r5 = (leftPointB.x + rightPointB.x) * 0.5f;
+	r6 = (leftPointB.y + rightPointB.y) * 0.25f;
 
 
 	r2 += r4 * d.y + r6 * d.x;
@@ -67,13 +67,13 @@ void main() {
         scale *= border[int(height) - scaledY - 1];
     }
 
-    if (scale != 1.f) {
+    /*if (scale != 1.f) {
         r2 *= scale; 
         r3 *= scale; 
         r4 *= scale;
         r5 *= scale; 
         r6 *= scale;
-    }
+    }*/
 
 	float r6q = r6 * r6;
 
@@ -84,9 +84,9 @@ void main() {
 	float out5 = r6 * r2 + r5 * r3;
 	
 	float use = abs(out1) * 500;
-	color0 = vec3(use, use, use);
-	//color0 = vec3(abs(out1) * 1000, abs(out2) * 1000, abs(out3) * 1000);
+	//colorA = vec3(use, use, use);
+	//colorB = vec3(abs(out1) * 1000, abs(out2) * 1000, abs(out3) * 1000);
 
-	//color0 = vec3(out1, out2, out3);
-	//color1 = vec2(out4, out5);
+	colorA = vec3(out1, out2, out3);
+	colorB = vec2(out4, out5);
 }

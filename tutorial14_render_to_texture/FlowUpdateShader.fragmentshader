@@ -1,0 +1,26 @@
+#version 330 core
+
+in vec2 UV;
+
+uniform sampler2D srcA;
+uniform sampler2D srcB;
+
+out vec2 color;
+
+void main() {
+    vec4 pointA = texture(srcA, UV);
+    vec4 pointB = texture(srcA, UV);
+
+    float g11 = pointA.x;
+    float g12 = pointA.y;
+    float g22 = pointA.z;
+    float h1 = pointB.x;
+    float h2 = pointB.y;
+
+    float idet = 1./(g11*g22 - g12*g12 + 1e-3);
+
+    float x = (g11*h2-g12*h1) * idet;
+    float y = (g22*h1 - g12*h2) * idet;
+
+    color = vec2(x, y);
+}

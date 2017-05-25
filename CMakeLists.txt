@@ -81,6 +81,7 @@ add_executable(tutorial14_render_to_texture
 	tutorial14_render_to_texture/MatrixUpdate.fragmentshader
 	tutorial14_render_to_texture/HorizontalGaussBlur.fragmentshader
 	tutorial14_render_to_texture/VerticalGaussBlur.fragmentshader
+	tutorial14_render_to_texture/FlowUpdateShader.fragmentshader
 )
 target_link_libraries(tutorial14_render_to_texture
 	${ALL_LIBS}
