@@ -9,13 +9,13 @@ out vec2 color;
 
 void main() {
     vec4 pointA = texture(srcA, UV);
-    vec4 pointB = texture(srcA, UV);
+    vec4 pointB = texture(srcB, UV);
 
-    float g11 = pointA.x;
-    float g12 = pointA.y;
-    float g22 = pointA.z;
-    float h1 = pointB.x;
-    float h2 = pointB.y;
+    float g11 = pointA.x * 1000;
+    float g12 = pointA.y * 1000;
+    float g22 = pointA.z * 1000;
+    float h1 = pointB.x * 1000;
+    float h2 = pointB.y * 1000;
 
     float idet = 1./(g11*g22 - g12*g12 + 1e-3);
 

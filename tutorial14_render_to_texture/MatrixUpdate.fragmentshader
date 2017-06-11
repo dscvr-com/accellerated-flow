@@ -28,12 +28,11 @@ void main() {
 	float x1 = x + d.x * ws;
 	float y1 = y + d.y * hs;
 
-	float r1;
 	float r2;
 	float r3;
 	float r4;
 	float r5;
-	float r6 = 0;
+	float r6;
 
 	vec3 leftPointA = texture(srcLeftA, UV).xyz;
 	vec2 leftPointB = texture(srcLeftB, UV).xy;
@@ -46,7 +45,6 @@ void main() {
 	r4 = (leftPointA.z + rightPointA.z) * 0.5f;
 	r5 = (leftPointB.x + rightPointB.x) * 0.5f;
 	r6 = (leftPointB.y + rightPointB.y) * 0.25f;
-
 
 	r2 += r4 * d.y + r6 * d.x;
 	r3 += r6 * d.y + r5 * d.x;
@@ -89,4 +87,7 @@ void main() {
 
 	colorA = vec3(out1, out2, out3);
 	colorB = vec2(out4, out5);
+
+    //colorA = vec3(r2, r3, r4);
+    //colorB = vec2(r5, r6);
 }

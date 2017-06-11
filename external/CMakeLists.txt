@@ -178,3 +178,26 @@ add_subdirectory( bullet-2.81-rev2613/src/BulletCollision )
 add_subdirectory( bullet-2.81-rev2613/src/BulletDynamics )
 add_subdirectory( bullet-2.81-rev2613/src/LinearMath )
 
+###bitmap library
+include_directories(
+    ${CMAKE_SOURCE_DIR}/external/bitmap
+)
+
+set(BITMAP_SOURCE
+    ${CMAKE_SOURCE_DIR}/external/bitmap/bitmap_test.cpp
+)
+
+set(BITMAP_HEADERS
+    ${CMAKE_SOURCE_DIR}/external/bitmap/bitmap_image.hpp
+)
+
+add_library( BITMAP_LIBRARY STATIC
+    ${BITMAP_SOURCE}
+    ${BITMAP_HEADERS}
+)
+
+target_link_libraries(BITMAP_LIBRARY
+    ${OPENGL_LIBRARY}
+	${EXTRA_LIBS}
+)
+

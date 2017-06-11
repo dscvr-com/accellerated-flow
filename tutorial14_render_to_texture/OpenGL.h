@@ -13,7 +13,7 @@ void ExecuteMatrixUpdateShader(int textureSourceLeftA, int textureSourceLeftB, i
 void ExecuteVerticalGaussBlur(int textureSourceA, int textureSourceB, int destinationA, int destinationB);
 void ExecuteHorizontalGaussBlur(int textureSourceA, int textureSourceB, int destinationA, int destinationB);
 void ExecuteFlowUpdateShader(int textureSourceA, int textureSourceB, int destination);
-void ExecuteCopyShader(int textureSource);
+void ExecuteCopyShader(int textureSource, float mul, int destination);
 void PrepareShader();
 void FinalizeShader();
 void easyTexImage2D(int width, int height, int dimension);
@@ -26,3 +26,8 @@ int GetNewPolyExpSlotB();
 int GetCurrentPolyExpLeftA();
 int GetCurrentPolyExpLeftB();
 int GetActiveSpaceLocation(int textureSource);
+void SaveImage(int textureSource, char* name, float mul);
+float fmax2(float left, float right);
+float fmax3(float left, float middle, float right);
+float fmin2(float left, float right);
+float fmin3(float left, float middle, float right);

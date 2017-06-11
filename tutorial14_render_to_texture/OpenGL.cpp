@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <iostream>
+#include "bitmap_image.hpp"
 
 //#include <png.h>
 
@@ -124,17 +125,18 @@ float* _kernel;
 
 GLuint _copyShader;
 GLuint _copyShader_srcId;
+GLuint _copyShader_mulId;
 
 int main(void)
 {
-	Init(1800, 1216);
+	Init(720, 1280);
 
 	//For now, later replace with LoadFrames!-------
 
 	//glActiveTexture(GL_TEXTURE0);
-	_textures[FrameLeft] = loadBMP_custom("Murmeln_LEFT.bmp");
+	_textures[FrameLeft] = loadBMP_custom("115.bmp");
 	//glActiveTexture(GL_TEXTURE1);
-	_textures[FrameRight] = loadBMP_custom("Murmeln_RIGHT.bmp");
+	_textures[FrameRight] = loadBMP_custom("115.bmp");
 	//-----------------------------------------------
 	
 	do
@@ -190,8 +192,8 @@ void Init(int imageWidth, int imageHeight)
 	{
 		glBindTexture(GL_TEXTURE_2D, _textures[i]);
 		easyTexImage2D(_imageWidth, _imageHeight, GetDimension(i));
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
@@ -272,6 +274,7 @@ void Init(int imageWidth, int imageHeight)
 
 	_copyShader = LoadShaders("Passthrough.vertexshader", "WobblyTexture.fragmentshader");
 	_copyShader_srcId = glGetUniformLocation(_copyShader, "src");
+	_copyShader_mulId = glGetUniformLocation(_copyShader, "mul");
 }
 
 void WindowsInit()
@@ -408,28 +411,87 @@ void CalculateOpticalFlow()
 	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
 }
 
+void SaveImage(int textureSource, char* name, float mul)
+{
+	int floatSpace = 4;
+	int bytesPerPixel = GetDimension(textureSource);
+	int size = bytesPerPixel * size_t(_imageWidth) * size_t(_imageHeight) * floatSpace;
+	float *data = (float*)malloc(size + 54);
+
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	int imageType = bytesPerPixel == 2 ? GL_RG : GL_RGB;
+	glReadPixels(0, 0, _imageWidth, _imageHeight, imageType, GL_FLOAT, data);
+	
+	bitmap_image image((unsigned int) _imageWidth, (unsigned int) _imageHeight);
+	if (bytesPerPixel == 3)
+	{
+		image.import_rgb(data, mul * 256);
+	}
+	else
+	{
+		image.import_rg(data, mul * 256);
+	}
+	image.vertical_flip();
+
+	std::string filename(name);
+	filename.append(".bmp");
+	image.save_image(filename);
+}
+
+float fmax2(float left, float right)
+{
+	if (left >= right) return left;
+	return right;
+}
+
+float fmin2(float left, float right)
+{
+	if (left <= right) return left;
+	return right;
+}
+
+float fmax3(float left, float middle, float right)
+{
+	return fmax2(left, fmax2(middle, right));
+}
+
+float fmin3(float left, float middle, float right)
+{
+	return fmin2(left, fmin2(middle, right));
+}
+
 void ExecuteShaders()
 {
 	//Only for testing, later no need to set every time
 	glBindFramebuffer(GL_FRAMEBUFFER, _framebuffer);
 	//-------------------------------------------------
+
+	/*ExecuteCopyShader(GetCurrentFrameLeft());
+	SaveImage(GetCurrentFrameLeft(), "Workspace.bmp");*/
+
 	ExecuteVerticalConvolutionShader(GetCurrentFrameLeft(), Workspace);
+	//SaveImage(Workspace, "Workspace.bmp");
 	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB());
+	SaveImage(GetCurrentPolyExpLeftA(), "PolyExpA", 1);
+	ExecuteCopyShader(GetCurrentPolyExpLeftB(), 1, Workspace);
+	SaveImage(GetCurrentPolyExpLeftB(), "PolyExpB", 100);
 	ExecuteVerticalConvolutionShader(GetCurrentFrameRight(), Workspace);
 	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB());
 	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
-
-	for (int i = 0; i < 1; i += 1) {
+	SaveImage(UpdateMatrixA, "UpdateMatrixA", 100);
+	ExecuteCopyShader(UpdateMatrixB, 1, Workspace);
+	SaveImage(UpdateMatrixB, "UpdateMatrixB", 10000);
+	/*for (int i = 0; i < 10; i += 1) {
 		ExecuteVerticalGaussBlur(UpdateMatrixA, UpdateMatrixB, Workspace, Workspace2);
 		ExecuteHorizontalGaussBlur(Workspace, Workspace2, BlurA, BlurB);
 		ExecuteFlowUpdateShader(BlurA, BlurB, Flow);
-		//ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
-	}
+		ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
+	}*/
 
 	//Only for testing, later no need to set every time
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	//ExecuteCopyShader(UPDATEMATRIX, UpdateMatrix);
-	ExecuteCopyShader(Flow);
+	ExecuteCopyShader(UpdateMatrixB, 10000, -1);
 	//ExecuteCopyShader(UpdateMatrix);
 	//-------------------------------------------------
 }
@@ -466,6 +528,7 @@ bool subtract = true;
 void ExecuteVerticalConvolutionShader(int textureSource, int destination)
 {
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textures[destination], 0);
+	glDrawBuffers(1, _attachments);
 	PrepareShader();
 
 	glUseProgram(_verticalShader);
@@ -550,7 +613,6 @@ void ExecuteMatrixUpdateShader(int textureSourceLeftA, int textureSourceLeftB, i
 	glUniform1f(_matrixUpdateShader_hsId, 1.f / ((float) _imageHeight));
 	glUniform1f(_matrixUpdateShader_wsId, 1.f / ((float) _imageWidth));
 
-
 	FinalizeShader();
 }
 
@@ -605,6 +667,7 @@ void ExecuteHorizontalGaussBlur(int textureSourceA, int textureSourceB, int dest
 void ExecuteFlowUpdateShader(int textureSourceA, int textureSourceB, int destination)
 {
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textures[destination], 0);
+	glDrawBuffers(1, _attachments);
 	PrepareShader();
 
 	glUseProgram(_flowUpdateShader);
@@ -620,14 +683,20 @@ void ExecuteFlowUpdateShader(int textureSourceA, int textureSourceB, int destina
 	FinalizeShader();
 }
 
-void ExecuteCopyShader(int textureSource)
+void ExecuteCopyShader(int textureSource, float mul, int destination)
 {
+	if (destination != -1)
+	{
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textures[destination], 0);
+		glDrawBuffers(1, _attachments);
+	}
 	PrepareShader();
 
 	glUseProgram(_copyShader);
 	glActiveTexture(GetTextureActiveSpace(textureSource));
 	glBindTexture(GL_TEXTURE_2D, _textures[textureSource]);
 	glUniform1i(_copyShader_srcId, GetActiveSpaceLocation(textureSource));
+	glUniform1f(_copyShader_mulId, mul);
 
 	FinalizeShader();
 }
