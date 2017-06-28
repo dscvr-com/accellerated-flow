@@ -830,25 +830,57 @@ public:
       }
    }
 
-   inline void import_rgb(float* rgb, float mul)
+   inline void import_rgb(float* rgb, float mul, bool useAbs)
    {
 	   //float mul = 256.0f;
 	   for (unsigned char* itr = data(); itr < end(); ++rgb)
 	   {
-		   *(itr + 2) = static_cast<unsigned char>(mul * std::abs(*rgb));
-		   *(itr + 1) = static_cast<unsigned char>(mul * std::abs(*(++rgb)));
-		   *(itr) = static_cast<unsigned char>(mul * std::abs(*(++rgb)));
-		   itr += 3;
+		    float red = mul * (*rgb);
+			float green = mul * (*(++rgb));
+			float blue = mul * (*(++rgb));
+			if (useAbs) 
+			{
+			   red = std::abs(red);
+			   green = std::abs(green);
+			   blue = std::abs(blue);
+			   if (red > 255) red = 255;
+			   if (green > 255) green = 255;
+			   if (blue > 255) blue = 255;
+			}
+			else
+			{
+				if (red < 0) red = 0;
+				if (green < 0) green = 0;
+				if (blue < 0) blue = 0;
+			}
+			*(itr + 2) = static_cast<unsigned char>(red);
+			*(itr + 1) = static_cast<unsigned char>(green);
+			*(itr) = static_cast<unsigned char>(blue);
+			itr += 3;
 	   }
    }
 
-   inline void import_rg(float* rg, float mul)
+   inline void import_rg(float* rg, float mul, bool useAbs)
    {
 	   //float mul = 256.0f;
 	   for (unsigned char* itr = data(); itr < end(); ++rg)
 	   {
-		   *(itr + 2) = static_cast<unsigned char>(mul * std::abs(*rg));
-		   *(itr + 1) = static_cast<unsigned char>(mul * std::abs(*(++rg)));
+		   float red = mul * (*rg);
+		   float green = mul * (*(++rg));
+		   if (useAbs)
+		   {
+			   red = std::abs(red);
+			   green = std::abs(green);
+			   if (red > 255) red = 255;
+			   if (green > 255) green = 255;
+		   }
+		   else
+		   {
+			   if (red < 0) red = 0;
+			   if (green < 0) green = 0;
+		   }
+		   *(itr + 2) = static_cast<unsigned char>(red);
+		   *(itr + 1) = static_cast<unsigned char>(green);
 		   *(itr) = 0;
 		   itr += 3;
 	   }

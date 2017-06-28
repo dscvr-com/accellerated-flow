@@ -1,33 +1,29 @@
 #pragma once
-void InitQuadVertexBuffer();
-void InitGaussKernel();
+
+
+
 void Init(int imageWidth, int imageHeight);
 void WindowsInit();
+
 void LoadInitialFrame(void *frame);
 void LoadNextFrame(void *frame);
 void ChangeToNextFrame();
+
 void ExecuteShaders();
-void ExecuteVerticalConvolutionShader(int textureSource, int destination);
-void ExecuteHorizontalConvolutionShader(int textureSource, int destinationA, int destinationB);
-void ExecuteMatrixUpdateShader(int textureSourceLeftA, int textureSourceLeftB, int textureSourceRightA, int textureSourceRightB, int flowSource, int destinationA, int destinationB);
-void ExecuteVerticalGaussBlur(int textureSourceA, int textureSourceB, int destinationA, int destinationB);
-void ExecuteHorizontalGaussBlur(int textureSourceA, int textureSourceB, int destinationA, int destinationB);
-void ExecuteFlowUpdateShader(int textureSourceA, int textureSourceB, int destination);
-void ExecuteCopyShader(int textureSource, float mul, int destination);
-void PrepareShader();
-void FinalizeShader();
-void easyTexImage2D(int width, int height, int dimension);
 void CleanUp();
-int GetTextureActiveSpace(int textureSource);
-int GetDimension(int index);
+
 int GetNewFrameSlot();
 int GetNewPolyExpSlotA();
 int GetNewPolyExpSlotB();
 int GetCurrentPolyExpLeftA();
 int GetCurrentPolyExpLeftB();
-int GetActiveSpaceLocation(int textureSource);
-void SaveImage(int textureSource, char* name, float mul);
+
+void SaveImage(int textureSource, std::string name, float mul, bool useAbs);
+
 float fmax2(float left, float right);
 float fmax3(float left, float middle, float right);
 float fmin2(float left, float right);
 float fmin3(float left, float middle, float right);
+
+std::string ToString(float number);
+std::string ToString(int number);
