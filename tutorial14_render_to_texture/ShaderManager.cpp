@@ -6,6 +6,7 @@
 
 #include "Constants.h"
 #include "ShaderManager.h"
+#include "ConvenienceHelper.h"
 
 GLuint* _textures;
 GLenum* _attachments;
@@ -45,6 +46,7 @@ GLuint _matrixUpdateShader_heightId;
 GLuint _matrixUpdateShader_widthId;
 GLuint _matrixUpdateShader_hsId;
 GLuint _matrixUpdateShader_wsId;
+GLuint _matrixUpdateShader_fakeId;
 
 GLuint _verticalGaussBlur;
 GLuint _verticalGaussBlur_srcA_Id;
@@ -63,6 +65,7 @@ GLuint _horizontalGaussBlur_m_Id;
 GLuint _flowUpdateShader;
 GLuint _flowUpdateShader_srcA_Id;
 GLuint _flowUpdateShader_srcB_Id;
+GLuint _flowUpdateShader_mulId;
 
 int _kernelSize = 10; //If changed, adjust accordingly in GaussBlur Shaders (uniform float kernel[])
 float* _kernel;
@@ -109,6 +112,7 @@ void ShaderInitialize(int imageWidth, int imageHeight)
 	_matrixUpdateShader_widthId = glGetUniformLocation(_matrixUpdateShader, "width");
 	_matrixUpdateShader_hsId = glGetUniformLocation(_matrixUpdateShader, "hs");
 	_matrixUpdateShader_wsId = glGetUniformLocation(_matrixUpdateShader, "ws");
+	_matrixUpdateShader_fakeId = glGetUniformLocation(_matrixUpdateShader, "fake");
 
 	_verticalGaussBlur = LoadShaders("Passthrough.vertexshader", "VerticalGaussBlur.fragmentshader");
 	_verticalGaussBlur_srcA_Id = glGetUniformLocation(_verticalGaussBlur, "srcA");
@@ -127,6 +131,7 @@ void ShaderInitialize(int imageWidth, int imageHeight)
 	_flowUpdateShader = LoadShaders("Passthrough.vertexshader", "FlowUpdateShader.fragmentshader");
 	_flowUpdateShader_srcA_Id = glGetUniformLocation(_flowUpdateShader, "srcA");
 	_flowUpdateShader_srcB_Id = glGetUniformLocation(_flowUpdateShader, "srcB");
+	_flowUpdateShader_mulId = glGetUniformLocation(_flowUpdateShader, "mul");
 
 	_copyShader = LoadShaders("Passthrough.vertexshader", "WobblyTexture.fragmentshader");
 	_copyShader_srcId = glGetUniformLocation(_copyShader, "src");
@@ -200,9 +205,8 @@ void ExecuteVerticalConvolutionShader(int _texturesource, int destination)
 	PrepareShader();
 
 	glUseProgram(_verticalShader);
-	glActiveTexture(GetTextureActiveSpace(_texturesource));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesource]);
-	glUniform1i(_verticalShader_srcId, GetActiveSpaceLocation(_texturesource));
+	ActivateTexture(_texturesource, _verticalShader_srcId);
+
 	float g[8] = { 0.265962, 0.212965, 0.10934, 0.035994, 0.00759733, 0.00102819, 8.92202e-05, 4.96403e-06 };
 	float xg[8] = { 0, 0.212965, 0.21868, 0.107982, 0.0303893, 0.00514093, 0.000535321, 3.47482e-05 };
 	float xxg[8] = { 0, 0.212965, 0.43736, 0.323946, 0.121557, 0.0257047, 0.00321193, 0.000243238 };
@@ -224,9 +228,9 @@ void ExecuteHorizontalConvolutionShader(int _texturesource, int destinationA, in
 	PrepareShader();
 
 	glUseProgram(_horizontalShader);
-	glActiveTexture(GetTextureActiveSpace(_texturesource));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesource]);
-	glUniform1i(_horizontalShader_srcId, GetActiveSpaceLocation(_texturesource));
+	ActivateTexture(_texturesource, _horizontalShader_srcId);
+
+
 	float g[8] = { 0.265962, 0.212965, 0.10934, 0.035994, 0.00759733, 0.00102819, 8.92202e-05, 4.96403e-06 };
 	float xg[8] = { 0, 0.212965, 0.21868, 0.107982, 0.0303893, 0.00514093, 0.000535321, 3.47482e-05 };
 	float xxg[8] = { 0, 0.212965, 0.43736, 0.323946, 0.121557, 0.0257047, 0.00321193, 0.000243238 };
@@ -247,7 +251,7 @@ void ExecuteHorizontalConvolutionShader(int _texturesource, int destinationA, in
 	FinalizeShader();
 }
 
-void ExecuteMatrixUpdateShader(int _texturesourceLeftA, int _texturesourceLeftB, int _texturesourceRightA, int _texturesourceRightB, int flowSource, int destinationA, int destinationB)
+void ExecuteMatrixUpdateShader(int _texturesourceLeftA, int _texturesourceLeftB, int _texturesourceRightA, int _texturesourceRightB, int flowSource, int destinationA, int destinationB, bool fake)
 {
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textures[destinationA], 0);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, _textures[destinationB], 0);
@@ -256,30 +260,17 @@ void ExecuteMatrixUpdateShader(int _texturesourceLeftA, int _texturesourceLeftB,
 
 	glUseProgram(_matrixUpdateShader);
 
-	glActiveTexture(GetTextureActiveSpace(_texturesourceLeftA));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceLeftA]);
-	glUniform1i(_matrixUpdateShader_srcLeftA_Id, GetActiveSpaceLocation(_texturesourceLeftA));
-
-	glActiveTexture(GetTextureActiveSpace(_texturesourceLeftB));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceLeftB]);
-	glUniform1i(_matrixUpdateShader_srcLeftB_Id, GetActiveSpaceLocation(_texturesourceLeftB));
-
-	glActiveTexture(GetTextureActiveSpace(_texturesourceRightA));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceRightA]);
-	glUniform1i(_matrixUpdateShader_srcRightA_Id, GetActiveSpaceLocation(_texturesourceRightA));
-
-	glActiveTexture(GetTextureActiveSpace(_texturesourceRightB));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceRightB]);
-	glUniform1i(_matrixUpdateShader_srcRightB_Id, GetActiveSpaceLocation(_texturesourceRightB));
-
-	glActiveTexture(GetTextureActiveSpace(flowSource));
-	glBindTexture(GL_TEXTURE_2D, _textures[flowSource]);
-	glUniform1i(_matrixUpdateShader_flowId, GetActiveSpaceLocation(flowSource));
+	ActivateTexture(_texturesourceLeftA, _matrixUpdateShader_srcLeftA_Id);
+	ActivateTexture(_texturesourceLeftB, _matrixUpdateShader_srcLeftB_Id);
+	ActivateTexture(_texturesourceRightA, _matrixUpdateShader_srcRightA_Id);
+	ActivateTexture(_texturesourceRightB, _matrixUpdateShader_srcRightB_Id);
+	ActivateTexture(flowSource, _matrixUpdateShader_flowId);
 
 	glUniform1f(_matrixUpdateShader_heightId, (float) _imageHeightM);
 	glUniform1f(_matrixUpdateShader_widthId, (float) _imageWidthM);
 	glUniform1f(_matrixUpdateShader_hsId, 1.f / ((float) _imageHeightM));
 	glUniform1f(_matrixUpdateShader_wsId, 1.f / ((float) _imageWidthM));
+	glUniform1i(_matrixUpdateShader_fakeId, fake);
 
 	FinalizeShader();
 }
@@ -293,13 +284,8 @@ void ExecuteVerticalGaussBlur(int _texturesourceA, int _texturesourceB, int dest
 
 	glUseProgram(_verticalGaussBlur);
 
-	glActiveTexture(GetTextureActiveSpace(_texturesourceA));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceA]);
-	glUniform1i(_verticalGaussBlur_srcA_Id, GetActiveSpaceLocation(_texturesourceA));
-
-	glActiveTexture(GetTextureActiveSpace(_texturesourceB));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceB]);
-	glUniform1i(_verticalGaussBlur_srcB_Id, GetActiveSpaceLocation(_texturesourceB));
+	ActivateTexture(_texturesourceA, _verticalGaussBlur_srcA_Id);
+	ActivateTexture(_texturesourceB, _verticalGaussBlur_srcB_Id);
 
 	glUniform1f(_verticalGaussBlur_hs_Id, ((float) 1) / ((float) _imageHeightM));
 	glUniform1fv(_verticalGaussBlur_kernel_Id, _kernelSize, _kernel);
@@ -317,13 +303,8 @@ void ExecuteHorizontalGaussBlur(int _texturesourceA, int _texturesourceB, int de
 
 	glUseProgram(_horizontalGaussBlur);
 
-	glActiveTexture(GetTextureActiveSpace(_texturesourceA));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceA]);
-	glUniform1i(_horizontalGaussBlur_srcA_Id, GetActiveSpaceLocation(_texturesourceA));
-
-	glActiveTexture(GetTextureActiveSpace(_texturesourceB));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceB]);
-	glUniform1i(_horizontalGaussBlur_srcB_Id, GetActiveSpaceLocation(_texturesourceB));
+	ActivateTexture(_texturesourceA, _horizontalGaussBlur_srcA_Id);
+	ActivateTexture(_texturesourceB, _horizontalGaussBlur_srcB_Id);
 
 	glUniform1f(_horizontalGaussBlur_ws_Id, ((float) 1) / ((float) _imageWidthM));
 	glUniform1fv(_horizontalGaussBlur_kernel_Id, _kernelSize, _kernel);
@@ -332,7 +313,7 @@ void ExecuteHorizontalGaussBlur(int _texturesourceA, int _texturesourceB, int de
 	FinalizeShader();
 }
 
-void ExecuteFlowUpdateShader(int _texturesourceA, int _texturesourceB, int destination)
+void ExecuteFlowUpdateShader(int textureSourceA, int textureSourceB, int destination)
 {
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, _textures[destination], 0);
 	glDrawBuffers(1, _attachments);
@@ -340,13 +321,10 @@ void ExecuteFlowUpdateShader(int _texturesourceA, int _texturesourceB, int desti
 
 	glUseProgram(_flowUpdateShader);
 
-	glActiveTexture(GetTextureActiveSpace(_texturesourceA));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceA]);
-	glUniform1i(_horizontalGaussBlur_srcA_Id, GetActiveSpaceLocation(_texturesourceA));
+	ActivateTexture(textureSourceA, _flowUpdateShader_srcA_Id);
+	ActivateTexture(textureSourceB, _flowUpdateShader_srcB_Id);
 
-	glActiveTexture(GetTextureActiveSpace(_texturesourceB));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesourceB]);
-	glUniform1i(_horizontalGaussBlur_srcB_Id, GetActiveSpaceLocation(_texturesourceB));
+	glUniform1f(_flowUpdateShader_mulId, 1000);
 
 	FinalizeShader();
 }
@@ -361,12 +339,17 @@ void ExecuteCopyShader(int _texturesource, float mul, int destination)
 	PrepareShader();
 
 	glUseProgram(_copyShader);
-	glActiveTexture(GetTextureActiveSpace(_texturesource));
-	glBindTexture(GL_TEXTURE_2D, _textures[_texturesource]);
-	glUniform1i(_copyShader_srcId, GetActiveSpaceLocation(_texturesource));
+	ActivateTexture(_texturesource, _copyShader_srcId);
 	glUniform1f(_copyShader_mulId, mul);
 
 	FinalizeShader();
+}
+
+void ActivateTexture(int textureSource, GLuint sourceId)
+{
+	glActiveTexture(GetTextureActiveSpace(textureSource));
+	glBindTexture(GL_TEXTURE_2D, _textures[textureSource]);
+	glUniform1i(sourceId, GetActiveSpaceLocation(textureSource));
 }
 
 static const GLfloat _gQuadVertexBufferData[] = {
@@ -421,103 +404,4 @@ void SetTexture(int space, GLuint value)
 GLuint GetTexture(int space)
 {
 	return _textures[space];
-}
-
-int GetTextureActiveSpace(int textureSource)
-{
-	switch (textureSource)
-	{
-	case Workspace:
-		return WORKSPACE;
-	case Workspace2:
-		return WORKSPACE2;
-	case PolyExpLeftA:
-		return POLYEXP_LEFT_A;
-	case PolyExpLeftB:
-		return POLYEXP_LEFT_B;
-	case PolyExpRightA:
-		return POLYEXP_RIGHT_A;
-	case PolyExpRightB:
-		return POLYEXP_RIGHT_B;
-	case UpdateMatrixA:
-		return UPDATEMATRIX_A;
-	case UpdateMatrixB:
-		return UPDATEMATRIX_B;
-	case Flow:
-		return FLOW;
-	case FrameLeft:
-		return FRAME;
-	case FrameRight:
-		return FRAME;
-	case BlurA:
-		return BLURA;
-	case BlurB:
-		return BLURB;
-	}
-}
-
-int GetActiveSpaceLocation(int textureSource)
-{
-	switch (textureSource)
-	{
-	case Workspace:
-		return 0;
-	case Workspace2:
-		return 1;
-	case PolyExpLeftA:
-		return 1;
-	case PolyExpLeftB:
-		return 2;
-	case PolyExpRightA:
-		return 3;
-	case PolyExpRightB:
-		return 4;
-	case UpdateMatrixA:
-		return 5;
-	case UpdateMatrixB:
-		return 6;
-	case Flow:
-		return 7;
-	case FrameLeft:
-		return 0;
-	case FrameRight:
-		return 0;
-	case BlurA:
-		return 2;
-	case BlurB:
-		return 3;
-	}
-}
-
-int GetDimension(int index)
-{
-	switch (index)
-	{
-	case Workspace:
-		return 3;
-	case Workspace2:
-		return 2;
-	case PolyExpLeftA:
-		return 3;
-	case PolyExpLeftB:
-		return 2;
-	case PolyExpRightA:
-		return 3;
-	case PolyExpRightB:
-		return 2;
-	case UpdateMatrixA:
-		return 3;
-	case UpdateMatrixB:
-		return 2;
-	case Flow:
-		return 3;
-	case FrameLeft:
-		return 3;
-	case FrameRight:
-		return 3;
-	case BlurA:
-		return 3;
-	case BlurB:
-		return 2;
-	}
 }

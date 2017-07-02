@@ -59,10 +59,12 @@ add_executable(tutorial14_render_to_texture
 	tutorial14_render_to_texture/tutorial14.cpp
 	tutorial14_render_to_texture/OpenGL.cpp
 	tutorial14_render_to_texture/ShaderManager.cpp
+	tutorial14_render_to_texture/ConvenienceHelper.cpp
 	
 	tutorial14_render_to_texture/OpenGL.h
 	tutorial14_render_to_texture/ShaderManager.h
 	tutorial14_render_to_texture/Constants.h
+	tutorial14_render_to_texture/ConvenienceHelper.h
 	
 	common/shader.cpp
 	common/shader.hpp

@@ -1,9 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <vector>
-#include <iostream>
 #include "bitmap_image.hpp"
-#include <sstream>
 
 //#include <png.h>
 
@@ -28,9 +23,9 @@ using namespace glm;
 
 #include "Constants.h"
 #include "ShaderManager.h"
+#include "ConvenienceHelper.h"
 
 GLFWwindow* window;
-
 
 int _imageWidth;
 int _imageHeight;
@@ -39,8 +34,6 @@ GLuint _framebuffer;
 
 const bool UseAbs = true;
 const bool OnlyPositive = false;
-
-int CurrentFrame = FrameLeft;
 
 GLuint _vertexArrayId;
 
@@ -155,112 +148,21 @@ void LoadNextFrame(void* frame)
 	ExecuteHorizontalConvolutionShader(Workspace, GetNewPolyExpSlotA(), GetNewPolyExpSlotB());
 }
 
-void ChangeToNextFrame()
-{
-	if (CurrentFrame == FrameLeft)
-	{
-		CurrentFrame = FrameRight;
-	}
-	else
-	{
-		CurrentFrame = FrameLeft;
-	}
-}
-int GetNewFrameSlot()
-{
-	return CurrentFrame;
-}
-int GetCurrentFrameLeft()
-{
-	if (CurrentFrame == FrameLeft)
-	{
-		return FrameRight;
-	}
-	else
-	{
-		return FrameLeft;
-	}
-}
-int GetCurrentFrameRight()
-{
-	return CurrentFrame;
-}
-int GetNewPolyExpSlotA()
-{
-	return GetCurrentPolyExpLeftA();
-}
-int GetNewPolyExpSlotB()
-{
-	return GetCurrentPolyExpLeftB();
-}
-int GetCurrentPolyExpLeftA()
-{
-	if (CurrentFrame == FrameLeft)
-	{
-		return PolyExpLeftA;
-	}
-	else
-	{
-		return PolyExpRightA;
-	}
-}
-int GetCurrentPolyExpLeftB()
-{
-	if (CurrentFrame == FrameLeft)
-	{
-		return PolyExpLeftB;
-	}
-	else
-	{
-		return PolyExpRightB;
-	}
-}
-int GetCurrentPolyExpRightA()
-{
-	if (CurrentFrame == FrameLeft)
-	{
-		return PolyExpRightA;
-	}
-	else
-	{
-		return PolyExpLeftA;
-	}
-}
-int GetCurrentPolyExpRightB()
-{
-	if (CurrentFrame == FrameLeft)
-	{
-		return PolyExpRightB;
-	}
-	else
-	{
-		return PolyExpLeftB;
-	}
-}
-
 void CalculateOpticalFlow()
 {
-	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
+	//ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
 }
 
 void SaveImage(int textureSource, std::string name, float mul, bool useAbs)
 {
 	int bytesPerPixel = GetDimension(textureSource);
 	int size = bytesPerPixel * size_t(_imageWidth) * size_t(_imageHeight);
-	float *data = (float*)malloc(size * sizeof(float));
+	float *data = (float*) malloc(size * sizeof(float));
 
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	int imageType = bytesPerPixel == 2 ? GL_RG : GL_RGB;
 	glReadPixels(0, 0, _imageWidth, _imageHeight, imageType, GL_FLOAT, data);
 
-	for (int i = 0; i < size; i += 1)
-	{
-		if (data[i] != 1)
-		{
-			int g = 5;
-		}
-	}
-	
 	bitmap_image image((unsigned int) _imageWidth, (unsigned int) _imageHeight);
 	if (bytesPerPixel == 3)
 	{
@@ -270,6 +172,7 @@ void SaveImage(int textureSource, std::string name, float mul, bool useAbs)
 	{
 		image.import_rg(data, mul * 256, useAbs);
 	}
+	free(data);
 	image.vertical_flip();
 
 	std::string filename = "result/";
@@ -282,42 +185,6 @@ void SaveImage(int textureSource, std::string name, float mul, bool useAbs)
 	}
 	filename.append(".bmp");
 	image.save_image(filename);
-}
-
-std::string ToString(float number)
-{
-	std::ostringstream buff;
-	buff << number;
-	return buff.str();
-}
-
-std::string ToString(int number)
-{
-	std::ostringstream buff;
-	buff << number;
-	return buff.str();
-}
-
-float fmax2(float left, float right)
-{
-	if (left >= right) return left;
-	return right;
-}
-
-float fmin2(float left, float right)
-{
-	if (left <= right) return left;
-	return right;
-}
-
-float fmax3(float left, float middle, float right)
-{
-	return fmax2(left, fmax2(middle, right));
-}
-
-float fmin3(float left, float middle, float right)
-{
-	return fmin2(left, fmin2(middle, right));
 }
 
 void ExecuteShaders()
@@ -339,11 +206,11 @@ void ExecuteShaders()
 	ExecuteVerticalConvolutionShader(GetCurrentFrameRight(), Workspace);
 	ExecuteHorizontalConvolutionShader(Workspace, GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB());
 	
-	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
+	ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB, false);
 	SaveImage(UpdateMatrixA, "UpdateMatrixA", 100, UseAbs);
 
 	ExecuteCopyShader(UpdateMatrixB, 1, Workspace);
-	SaveImage(UpdateMatrixB, "UpdateMatrixB", 100, UseAbs);
+	SaveImage(UpdateMatrixB, "UpdateMatrixB", 1000, UseAbs);
 
 	for (int i = 0; i < 5; i += 1) {
 		std::string iteration = ToString(i);
@@ -363,11 +230,11 @@ void ExecuteShaders()
 		SaveImage(Flow, "Flow" + iteration, 1000, OnlyPositive);
 		//SaveImage(Flow, "Flow" + iteration, 0.005f, OnlyPositive);
 
-		ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB);
+		ExecuteMatrixUpdateShader(GetCurrentPolyExpLeftA(), GetCurrentPolyExpLeftB(), GetCurrentPolyExpRightA(), GetCurrentPolyExpRightB(), Flow, UpdateMatrixA, UpdateMatrixB, false);
 		SaveImage(UpdateMatrixA, "UpdateMatrixA" + iteration, 100, UseAbs);
 
 		ExecuteCopyShader(UpdateMatrixB, 1, Workspace);
-		SaveImage(UpdateMatrixB, "UpdateMatrixB" + iteration, 100, UseAbs);
+		SaveImage(UpdateMatrixB, "UpdateMatrixB" + iteration, 1000, UseAbs);
 	}
 
 	//Only for testing, later no need to set every time
@@ -377,9 +244,6 @@ void ExecuteShaders()
 	//ExecuteCopyShader(UpdateMatrix);
 	//-------------------------------------------------
 }
-
-float count = 1.f;
-bool subtract = true;
 
 void CleanUp()
 {

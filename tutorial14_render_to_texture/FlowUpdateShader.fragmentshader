@@ -5,17 +5,19 @@ in vec2 UV;
 uniform sampler2D srcA;
 uniform sampler2D srcB;
 
+uniform float mul;
+
 out vec2 color;
 
 void main() {
     vec4 pointA = texture(srcA, UV);
     vec4 pointB = texture(srcB, UV);
 
-    float g11 = pointA.x * 1000;
-    float g12 = pointA.y * 1000;
-    float g22 = pointA.z * 1000;
-    float h1 = pointB.x * 1000;
-    float h2 = pointB.y * 1000;
+    float g11 = pointA.x * mul;
+    float g12 = pointA.y * mul;
+    float g22 = pointA.z * mul;
+    float h1 = pointB.x * mul;
+    float h2 = pointB.y * mul;
 
     float idet = 1./(g11*g22 - g12*g12 + 1e-3);
 

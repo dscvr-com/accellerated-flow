@@ -1,4 +1,4 @@
-
+#pragma once
 #include <GL/glew.h>
 
 const int WORKSPACE = GL_TEXTURE0;
