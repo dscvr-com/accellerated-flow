@@ -55,16 +55,16 @@ add_definitions(
 )
 
 # Tutorial 14
-add_executable(tutorial14_render_to_texture
-	tutorial14_render_to_texture/tutorial14.cpp
-	tutorial14_render_to_texture/OpenGL.cpp
-	tutorial14_render_to_texture/ShaderManager.cpp
-	tutorial14_render_to_texture/ConvenienceHelper.cpp
+add_executable(OpticalFlow_OpenGL
+	OpticalFlow_OpenGL/tutorial14.cpp
+	OpticalFlow_OpenGL/OpenGL.cpp
+	OpticalFlow_OpenGL/ShaderManager.cpp
+	OpticalFlow_OpenGL/ConvenienceHelper.cpp
 	
-	tutorial14_render_to_texture/OpenGL.h
-	tutorial14_render_to_texture/ShaderManager.h
-	tutorial14_render_to_texture/Constants.h
-	tutorial14_render_to_texture/ConvenienceHelper.h
+	OpticalFlow_OpenGL/OpenGL.h
+	OpticalFlow_OpenGL/ShaderManager.h
+	OpticalFlow_OpenGL/Constants.h
+	OpticalFlow_OpenGL/ConvenienceHelper.h
 	
 	common/shader.cpp
 	common/shader.hpp
@@ -79,24 +79,24 @@ add_executable(tutorial14_render_to_texture
 	common/text2D.hpp
 	common/text2D.cpp
 	
-	tutorial14_render_to_texture/StandardShadingRTT.vertexshader
-	tutorial14_render_to_texture/VerticalConvolution.fragmentshader
-	tutorial14_render_to_texture/Passthrough.vertexshader
-	tutorial14_render_to_texture/WobblyTexture.fragmentshader
-	tutorial14_render_to_texture/HorizontalConvolution.fragmentshader
-	tutorial14_render_to_texture/MatrixUpdate.fragmentshader
-	tutorial14_render_to_texture/HorizontalGaussBlur.fragmentshader
-	tutorial14_render_to_texture/VerticalGaussBlur.fragmentshader
-	tutorial14_render_to_texture/FlowUpdateShader.fragmentshader
+	OpticalFlow_OpenGL/StandardShadingRTT.vertexshader
+	OpticalFlow_OpenGL/VerticalConvolution.fragmentshader
+	OpticalFlow_OpenGL/Passthrough.vertexshader
+	OpticalFlow_OpenGL/WobblyTexture.fragmentshader
+	OpticalFlow_OpenGL/HorizontalConvolution.fragmentshader
+	OpticalFlow_OpenGL/MatrixUpdate.fragmentshader
+	OpticalFlow_OpenGL/HorizontalGaussBlur.fragmentshader
+	OpticalFlow_OpenGL/VerticalGaussBlur.fragmentshader
+	OpticalFlow_OpenGL/FlowUpdateShader.fragmentshader
 )
-target_link_libraries(tutorial14_render_to_texture
+target_link_libraries(OpticalFlow_OpenGL
 	${ALL_LIBS}
 )
 
 
 # Xcode and Visual working directories
-set_target_properties(tutorial14_render_to_texture PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tutorial14_render_to_texture/")
-create_target_launcher(tutorial14_render_to_texture WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorial14_render_to_texture/")
+set_target_properties(OpticalFlow_OpenGL PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tutorial14_render_to_texture/")
+create_target_launcher(OpticalFlow_OpenGL WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/tutorial14_render_to_texture/")
 
 SOURCE_GROUP(common REGULAR_EXPRESSION ".*/common/.*" )
 SOURCE_GROUP(shaders REGULAR_EXPRESSION ".*/.*shader$" )
@@ -104,8 +104,8 @@ SOURCE_GROUP(shaders REGULAR_EXPRESSION ".*/.*shader$" )
 
 if (NOT ${CMAKE_GENERATOR} MATCHES "Xcode" )
 add_custom_command(
-   TARGET tutorial14_render_to_texture POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/tutorial14_render_to_texture${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/tutorial14_render_to_texture/"
+   TARGET OpticalFlow_OpenGL POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/OpticalFlow_OpenGL${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/OpticalFlow_OpenGL/"
 )
 
 elseif (${CMAKE_GENERATOR} MATCHES "Xcode" )

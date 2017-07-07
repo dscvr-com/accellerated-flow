@@ -1,0 +1,62 @@
+// shadertype=glsl
+#version 330 core
+
+in vec2 UV;
+uniform sampler2D srcA;
+uniform sampler2D srcB;
+
+layout(location = 0) out vec3 colorA;
+layout(location = 1) out vec2 colorB;
+
+uniform float hs;
+uniform float kernel[10]; //Correct Number Here
+
+uniform int m;
+
+void main() {
+    float x = UV.x;
+    float y = UV.y;
+    
+    vec4 pointA = texture(srcA, UV);
+    vec4 pointB = texture(srcB, UV);
+    
+    float gauss = kernel[0];
+    
+    float xA = pointA.x * gauss;
+    float yA = pointA.y * gauss;
+    float zA = pointA.z * gauss;
+    float xB = pointB.x * gauss;
+    float yB = pointB.y * gauss;
+    
+    vec4 pointA0;
+    vec4 pointA1;
+    vec4 pointB0;
+    vec4 pointB1;
+    float step;
+    vec2 incLoc;
+    vec2 decLoc;
+    for (int i = 1; i <= m; i += 1) {
+        gauss = kernel[i];
+        step = i * hs;
+        
+        incLoc = vec2(x, y + step);
+        decLoc = vec2(x, y - step);
+        
+        pointA0 = texture(srcA, incLoc);
+        pointA1 = texture(srcA, decLoc);
+        
+        pointB0 = texture(srcB, incLoc);
+        pointB1 = texture(srcB, decLoc);
+        
+        xA += (pointA0.x + pointA1.x) * gauss;
+        yA += (pointA0.y + pointA1.y) * gauss;
+        zA += (pointA0.z + pointA1.z) * gauss;
+        xB += (pointB0.x + pointB1.x) * gauss;
+        yB += (pointB0.y + pointB1.y) * gauss;
+    }
+    
+    //colorA = texture(srcA, UV).xyz;
+    //colorB = texture(srcB, UV).xy;
+    colorA = vec3(xA, yA, zA);
+    colorB = vec2(xB, yB);
+}

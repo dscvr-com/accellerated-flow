@@ -849,6 +849,9 @@ public:
 			}
 			else
 			{
+				if (red > 255) red = 255;
+				if (green > 255) green = 255;
+				if (blue > 255) blue = 255;
 				if (red < 0) red = 0;
 				if (green < 0) green = 0;
 				if (blue < 0) blue = 0;
@@ -876,6 +879,8 @@ public:
 		   }
 		   else
 		   {
+			   if (red > 255) red = 255;
+			   if (green > 255) green = 255;
 			   if (red < 0) red = 0;
 			   if (green < 0) green = 0;
 		   }
@@ -883,6 +888,54 @@ public:
 		   *(itr + 1) = static_cast<unsigned char>(green);
 		   *(itr) = 0;
 		   itr += 3;
+	   }
+   }
+
+   inline void import_rgb_bw(float* rgb, float mul, bool useAbs, int use)
+   {
+	   for (unsigned char* itr = data(); itr < end(); )
+	   {
+		   float pixel = mul * (*(rgb + use));
+		   if (useAbs)
+		   {
+			   pixel = std::abs(pixel);
+		   }
+		   else
+		   {
+			   if (pixel < 0) pixel = 0;
+		   }
+		   if (pixel > 255) pixel = 255;
+
+		   unsigned char pixelUse = static_cast<unsigned char>(pixel);
+		   *(itr + 2) = pixelUse;
+		   *(itr + 1) = pixelUse;
+		   *itr = pixelUse;
+		   itr += 3;
+		   rgb += 3;
+	   }
+   }
+
+   inline void import_rg_bw(float* rg, float mul, bool useAbs, int use)
+   {
+	   for (unsigned char* itr = data(); itr < end(); )
+	   {
+		   float pixel = mul * (*(rg + use));
+		   if (useAbs)
+		   {
+			   pixel = std::abs(pixel);
+		   }
+		   else
+		   {
+			   if (pixel < 0) pixel = 0;
+		   }
+		   if (pixel > 255) pixel = 255;
+
+		   unsigned char pixelUse = static_cast<unsigned char>(pixel);
+		   *(itr + 2) = pixelUse;
+		   *(itr + 1) = pixelUse;
+		   *itr = pixelUse;
+		   itr += 3;
+		   rg += 2;
 	   }
    }
 
