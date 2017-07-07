@@ -1,3 +1,4 @@
+// shadertype=glsl
 #version 330 core
 
 in vec2 UV;
@@ -8,7 +9,7 @@ layout(location = 0) out vec3 colorA;
 layout(location = 1) out vec2 colorB;
 
 uniform float hs;
-uniform float kernel[10]; //CorrectNumberHere
+uniform float kernel[10]; //Correct Number Here
 
 uniform int m;
 

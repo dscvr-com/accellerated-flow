@@ -1,12 +1,12 @@
-
 #include <iostream>
 #include <GL/glew.h>
 #include <glfw3.h>
 #include <common/shader.hpp>
 
 #include "Constants.h"
-#include "ShaderManager.h"
 #include "ConvenienceHelper.h"
+
+#include "ShaderManager.h"
 
 GLuint* _textures;
 GLenum* _attachments;

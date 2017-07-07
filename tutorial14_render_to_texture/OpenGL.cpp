@@ -1,6 +1,5 @@
 #include "bitmap_image.hpp"
 
-//#include <png.h>
 
 // Include GLEW
 #include <GL/glew.h>
@@ -19,11 +18,11 @@ using namespace glm;
 #include <common/objloader.hpp>
 #include <common/vboindexer.hpp>
 
-#include "OpenGL.h";
-
 #include "Constants.h"
 #include "ShaderManager.h"
 #include "ConvenienceHelper.h"
+
+#include "OpenGL.h";
 
 GLFWwindow* window;
 

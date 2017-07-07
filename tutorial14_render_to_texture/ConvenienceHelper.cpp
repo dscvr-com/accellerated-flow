@@ -1,7 +1,7 @@
 #include <sstream>
+#include "Constants.h"
 
 #include "ConvenienceHelper.h"
-#include "Constants.h"
 
 int CurrentFrame = FrameLeft;
 
